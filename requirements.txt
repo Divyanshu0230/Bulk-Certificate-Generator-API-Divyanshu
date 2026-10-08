@@ -1,0 +1,12 @@
+fastapi==0.142.4
+uvicorn==0.54.0
+SQLAlchemy==2.1.4
+pydantic==2.13.5
+pydantic-settings==2.15.0
+reportlab==5.0.1
+qrcode==8.2
+pillow==12.3.0
+httpx==0.28.1
+pypdf==6.19.0
+pypdfium2==5.14.0
+pytest==9.1.1

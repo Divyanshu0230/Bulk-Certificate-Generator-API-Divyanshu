@@ -1,0 +1,29 @@
+{
+  "event": {
+    "title": "Advanced Python Workshop",
+    "issuer": "Northwind Academy",
+    "issue_date": "2026-10-08",
+    "description": "has successfully completed",
+    "signatory_name": "Dr. Meera Shah",
+    "signatory_title": "Program Director"
+  },
+  "recipients": [
+    {
+      "name": "Ada Lovelace",
+      "email": "ada@example.com",
+      "external_id": "EMP-1",
+      "detail": "With distinction"
+    },
+    {
+      "name": "Alan Turing",
+      "email": "alan@example.com",
+      "external_id": "EMP-2"
+    },
+    {
+      "name": "Grace Hopper",
+      "email": "grace@example.com",
+      "external_id": "EMP-3",
+      "detail": "Systems track"
+    }
+  ]
+}

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bulk Certificate Generator</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --cream: #fbf7ef;
+      --navy: #1b3a4b;
+      --gold: #b8956a;
+      --ink: #1c1917;
+      --muted: #57534e;
+      --line: #eadfce;
+      --white: #fffdf9;
+      --danger: #8a3b2d;
+      --ok: #1f6b45;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--cream);
+      color: var(--ink);
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      padding: 28px 32px 8px;
+    }
+    h1 {
+      margin: 0;
+      font-family: Palatino, "Palatino Linotype", Georgia, serif;
+      font-size: 34px;
+      font-weight: 600;
+      color: var(--navy);
+    }
+    header p { margin: 6px 0 0; color: var(--muted); }
+    header a { color: var(--navy); }
+    main {
+      display: grid;
+      grid-template-columns: minmax(320px, 1.1fr) minmax(320px, 0.9fr);
+      gap: 20px;
+      padding: 20px 32px 40px;
+    }
+    .span { grid-column: 1 / -1; }
+    .preview-image {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: white;
+      border: 1px solid var(--line);
+    }
+    tr.selected { background: #f8f1e4; }
+    tbody tr { cursor: pointer; }
+    section {
+      background: var(--white);
+      border: 1px solid var(--gold);
+      box-shadow: 0 0 0 5px var(--cream), 0 0 0 6px var(--navy);
+      padding: 22px;
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 13px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--navy);
+    }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--ink);
+      padding: 8px 10px;
+      font: inherit;
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .recipient {
+      display: grid;
+      grid-template-columns: 1.3fr 1.2fr 0.8fr 1fr auto;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    button, .linkish {
+      border: 0;
+      background: var(--navy);
+      color: white;
+      font: inherit;
+      padding: 10px 14px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    button.secondary, a.secondary {
+      background: transparent;
+      color: var(--navy);
+      border: 1px solid var(--navy);
+    }
+    button.remove { background: transparent; color: var(--danger); border: 1px solid var(--line); padding: 8px 10px; }
+    .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .bar { height: 8px; background: var(--line); margin: 10px 0 14px; }
+    .bar span { display: block; height: 100%; background: var(--gold); width: 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .badge { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .succeeded { color: var(--ok); }
+    .failed { color: var(--danger); }
+    .pending, .queued, .processing { color: var(--navy); }
+    .error { color: var(--danger); white-space: pre-wrap; }
+    .empty { color: var(--muted); margin: 0; }
+    @media (max-width: 980px) {
+      header, main { padding-left: 16px; padding-right: 16px; }
+      main, .grid, .recipient { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Bulk Certificate Generator</h1>
+      <p>One request creates a certificate for every recipient. The API does the work; this page is only a client.</p>
+    </div>
+    <a href="/docs">API docs</a>
+  </header>
+  <main>
+    <section class="span">
+      <h2>Certificate template</h2>
+      <p id="preview-caption" class="empty">This is the certificate every recipient receives. The name, event, date, and detail change. The design stays the same. Generate a batch, then click a name to see that person's copy.</p>
+      <img id="certificate-preview" class="preview-image" alt="Certificate template" src="/sample-certificate.png">
+    </section>
+    <section>
+      <h2>Certificate job</h2>
+      <form id="job-form">
+        <div class="grid">
+          <div>
+            <label for="title">Event title</label>
+            <input id="title" value="Advanced Python Workshop" required>
+          </div>
+          <div>
+            <label for="issuer">Issuer</label>
+            <input id="issuer" value="Northwind Academy" required>
+          </div>
+          <div>
+            <label for="issue_date">Issue date</label>
+            <input id="issue_date" type="date" value="2026-10-08" required>
+          </div>
+          <div>
+            <label for="description">Description</label>
+            <input id="description" value="has successfully completed">
+          </div>
+          <div>
+            <label for="signatory_name">Signatory</label>
+            <input id="signatory_name" value="Dr. Meera Shah">
+          </div>
+          <div>
+            <label for="signatory_title">Signatory title</label>
+            <input id="signatory_title" value="Program Director">
+          </div>
+        </div>
+        <h2>Recipients</h2>
+        <div id="recipients"></div>
+        <div class="actions">
+          <button type="button" class="secondary" id="add-recipient">Add recipient</button>
+          <button type="submit" id="submit">Generate certificates</button>
+        </div>
+      </form>
+    </section>
+    <section>
+      <h2>Progress</h2>
+      <p id="summary" class="empty">Submit a batch to watch it generate here.</p>
+      <div class="bar" hidden><span id="progress"></span></div>
+      <p id="issues" class="error" hidden></p>
+      <div class="actions" id="downloads" hidden>
+        <a id="zip-link" class="linkish" href="#">Download zip</a>
+        <a id="csv-link" class="linkish secondary" href="#">Download CSV</a>
+      </div>
+      <table id="results" hidden>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+  <template id="recipient-row">
+    <div class="recipient">
+      <input name="name" placeholder="Name" aria-label="Name" required>
+      <input name="email" placeholder="Email" aria-label="Email">
+      <input name="external_id" placeholder="External id" aria-label="External id">
+      <input name="detail" placeholder="Detail printed on the certificate" aria-label="Detail">
+      <button type="button" class="remove">Remove</button>
+    </div>
+  </template>
+  <script>
+    const recipients = document.querySelector("#recipients");
+    const template = document.querySelector("#recipient-row");
+    const summary = document.querySelector("#summary");
+    const bar = document.querySelector(".bar");
+    const progress = document.querySelector("#progress");
+    const issues = document.querySelector("#issues");
+    const downloads = document.querySelector("#downloads");
+    const results = document.querySelector("#results");
+    const tbody = results.querySelector("tbody");
+
+    const sample = [
+      ["Ada Lovelace", "ada@example.com", "EMP-1", "With distinction"],
+      ["Alan Turing", "alan@example.com", "EMP-2", ""],
+      ["Grace Hopper", "grace@example.com", "EMP-3", "Systems track"],
+    ];
+
+    function addRecipient(values = ["", "", "", ""]) {
+      const row = template.content.firstElementChild.cloneNode(true);
+      const fields = row.querySelectorAll("input");
+      values.forEach((value, index) => { fields[index].value = value; });
+      row.querySelector(".remove").addEventListener("click", () => {
+        if (recipients.children.length > 1) row.remove();
+      });
+      recipients.appendChild(row);
+    }
+
+    sample.forEach(addRecipient);
+    document.querySelector("#add-recipient").addEventListener("click", () => addRecipient());
+
+    function blankToNull(value) {
+      const trimmed = value.trim();
+      return trimmed ? trimmed : null;
+    }
+
+    document.querySelector("#job-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const people = [...recipients.querySelectorAll(".recipient")].map((row) => {
+        const [name, email, externalId, detail] = [...row.querySelectorAll("input")].map((input) => input.value);
+        return {
+          name: name.trim(),
+          email: blankToNull(email),
+          external_id: blankToNull(externalId),
+          detail: blankToNull(detail),
+        };
+      });
+      const payload = {
+        event: {
+          title: document.querySelector("#title").value.trim(),
+          issuer: document.querySelector("#issuer").value.trim(),
+          issue_date: document.querySelector("#issue_date").value,
+          description: blankToNull(document.querySelector("#description").value),
+          signatory_name: blankToNull(document.querySelector("#signatory_name").value),
+          signatory_title: blankToNull(document.querySelector("#signatory_title").value),
+        },
+        recipients: people,
+      };
+      const submit = document.querySelector("#submit");
+      submit.disabled = true;
+      issues.hidden = true;
+      try {
+        const response = await fetch("/api/v1/jobs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const body = await response.json();
+        if (!response.ok) {
+          showError(body);
+          return;
+        }
+        showIssues(body.validation_issues || []);
+        await watch(body.id);
+      } catch (error) {
+        summary.textContent = "The request could not be sent. Is the API still running?";
+      } finally {
+        submit.disabled = false;
+      }
+    });
+
+    function showError(body) {
+      const lines = [body.detail || "Request failed"];
+      for (const error of body.errors || []) {
+        const where = error.field || (error.position !== undefined ? `row ${error.position}` : "");
+        lines.push([where, error.message].filter(Boolean).join(": "));
+      }
+      issues.hidden = false;
+      issues.textContent = lines.join("\n");
+      summary.textContent = "The batch was not accepted.";
+    }
+
+    function showIssues(validationIssues) {
+      if (!validationIssues.length) {
+        issues.hidden = true;
+        return;
+      }
+      issues.hidden = false;
+      issues.textContent = validationIssues
+        .map((issue) => `Row ${issue.position + 1} ${issue.field}: ${issue.message}`)
+        .join("\n");
+    }
+
+    async function watch(jobId) {
+      const terminal = new Set(["completed", "completed_with_errors", "failed"]);
+      let job;
+      for (let attempt = 0; attempt < 40; attempt += 1) {
+        const response = await fetch(`/api/v1/jobs/${jobId}`, { headers: { "Accept": "application/json" } });
+        job = await response.json();
+        renderJob(job);
+        if (terminal.has(job.status)) break;
+        await new Promise((resolve) => setTimeout(resolve, 400));
+      }
+      const listed = await fetch(`/api/v1/jobs/${jobId}/certificates?limit=200`, {
+        headers: { "Accept": "application/json" },
+      });
+      renderCertificates((await listed.json()).items || []);
+    }
+
+    function renderJob(job) {
+      const progressCounts = job.progress;
+      summary.textContent = `${job.status.replaceAll("_", " ")} · ${progressCounts.succeeded} succeeded, ${progressCounts.failed} failed, ${progressCounts.pending} pending`;
+      bar.hidden = false;
+      progress.style.width = `${progressCounts.percent_complete}%`;
+      downloads.hidden = progressCounts.succeeded === 0;
+      document.querySelector("#zip-link").href = `/api/v1/jobs/${job.id}/archive`;
+      document.querySelector("#csv-link").href = `/api/v1/jobs/${job.id}/report`;
+    }
+
+    function showCertificate(certificate, row) {
+      if (!certificate.download_url) return;
+      document.querySelector("#certificate-preview").src = `/api/v1/certificates/${certificate.id}/preview.png`;
+      document.querySelector("#preview-caption").textContent = `${certificate.recipient_name} · ${certificate.certificate_number}`;
+      for (const existing of tbody.querySelectorAll("tr")) existing.classList.remove("selected");
+      if (row) row.classList.add("selected");
+    }
+
+    function renderCertificates(items) {
+      tbody.replaceChildren();
+      results.hidden = items.length === 0;
+      let firstReady = null;
+      for (const certificate of items) {
+        const row = document.createElement("tr");
+        const links = document.createElement("td");
+        if (certificate.download_url) {
+          links.append(link("PDF", certificate.download_url), " ");
+          row.addEventListener("click", () => showCertificate(certificate, row));
+          if (!firstReady) firstReady = { certificate, row };
+        }
+        if (certificate.verify_url) {
+          links.append(link("Verify", certificate.verify_url));
+        }
+        if (certificate.error_message) {
+          const message = document.createElement("div");
+          message.className = "error";
+          message.textContent = certificate.error_message;
+          links.append(message);
+        }
+        row.innerHTML = `<td></td><td class="badge ${certificate.status}"></td><td></td>`;
+        row.children[0].textContent = certificate.recipient_name;
+        row.children[1].textContent = certificate.status;
+        row.children[2].replaceWith(links);
+        tbody.appendChild(row);
+        if (firstReady && firstReady.row === row) showCertificate(certificate, row);
+      }
+    }
+
+    function link(label, href) {
+      const anchor = document.createElement("a");
+      anchor.href = href;
+      anchor.textContent = label;
+      anchor.target = "_blank";
+      return anchor;
+    }
+  </script>
+</body>
+</html>
