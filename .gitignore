@@ -12,3 +12,6 @@ examples/output/
 *.db-wal
 *.db-shm
 .DS_Store
+.vercel/
+.vercel
+.env*

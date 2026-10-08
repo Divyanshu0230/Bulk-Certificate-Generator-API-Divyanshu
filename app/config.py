@@ -1,6 +1,7 @@
+import os
 from functools import lru_cache
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -35,6 +36,16 @@ class Settings(BaseSettings):
             return None
         return value
 
+    @field_validator("public_base_url", mode="before")
+    @classmethod
+    def use_vercel_host(cls, value: object) -> object:
+        if value in (None, "", "http://127.0.0.1:8000"):
+            host = os.environ.get("VERCEL_PROJECT_PRODUCTION_URL") or os.environ.get("VERCEL_URL")
+            if host:
+                host = str(host).removeprefix("https://").removeprefix("http://").strip("/")
+                return f"https://{host}"
+        return value
+
     @field_validator("public_base_url")
     @classmethod
     def normalize_base_url(cls, value: str) -> str:
@@ -42,6 +53,16 @@ class Settings(BaseSettings):
         if not normalized.startswith(("http://", "https://")):
             raise ValueError("PUBLIC_BASE_URL must start with http:// or https://")
         return normalized
+
+    @model_validator(mode="after")
+    def vercel_uses_tmp(self) -> "Settings":
+        if os.environ.get("VERCEL") != "1":
+            return self
+        if self.database_url == "sqlite:///./data/certificates.db":
+            self.database_url = "sqlite:////tmp/certificates.db"
+        if self.storage_dir == "./storage/certificates":
+            self.storage_dir = "/tmp/certificates"
+        return self
 
     @field_validator("max_recipients_per_job")
     @classmethod

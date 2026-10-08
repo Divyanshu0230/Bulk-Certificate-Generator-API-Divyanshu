@@ -9,12 +9,14 @@ from app.models import CertificateStatus, JobStatus
 from app.schemas import CertificateList, GenerateRequest, JobCreated, JobList, JobRead
 from app.serializers import certificate_to_read, job_to_created, job_to_read
 from app.services.exports import build_archive, build_report, succeeded
+from app.services.hosted_state import generates_in_request
 from app.services.jobs import (
     create_job,
     get_job,
     list_certificates,
     list_jobs,
     normalize_idempotency_key,
+    process_job,
 )
 
 router = APIRouter(
@@ -47,6 +49,10 @@ def create_generation_job(
     """
 
     job, created = create_job(db, payload, normalize_idempotency_key(idempotency_key))
+    if generates_in_request() and job.status == JobStatus.queued.value:
+        process_job(db, job.id)
+        db.expire_all()
+        job = get_job(db, job.id)
     body = job_to_created(job).model_dump(mode="json")
     return JSONResponse(
         status_code=202 if created else 200,

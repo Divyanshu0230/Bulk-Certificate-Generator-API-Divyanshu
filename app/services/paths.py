@@ -22,5 +22,9 @@ def resolve_stored_file(file_path: str) -> Path:
     if not candidate.is_relative_to(root):
         raise CertificateNotFound()
     if not candidate.is_file():
+        from app.services.hosted_state import ensure_pdf
+
+        ensure_pdf(candidate)
+    if not candidate.is_file():
         raise CertificateFileMissing()
     return candidate

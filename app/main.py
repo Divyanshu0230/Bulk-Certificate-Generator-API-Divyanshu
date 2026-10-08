@@ -11,6 +11,7 @@ from app.api.routes import certificates, health, jobs, verify
 from app.config import get_settings
 from app.database import init_database
 from app.exceptions import AppError
+from app.services.hosted_state import generates_in_request, pull_database, push_state
 from app.services.preview_image import render_pdf_png
 from app.services.worker import JobWorker
 
@@ -27,7 +28,7 @@ async def lifespan(app: FastAPI):
     init_database()
     settings = get_settings()
     worker = None
-    if settings.worker_enabled:
+    if settings.worker_enabled and not generates_in_request():
         worker = JobWorker(settings.worker_poll_interval_seconds)
         worker.start()
         app.state.worker = worker
@@ -67,6 +68,14 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def keep_hosted_files(request: Request, call_next):
+        pull_database()
+        response = await call_next(request)
+        if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+            push_state()
+        return response
 
     app.include_router(health.router)
     app.include_router(jobs.router, prefix="/api/v1")
