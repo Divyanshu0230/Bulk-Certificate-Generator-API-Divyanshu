@@ -42,14 +42,19 @@
     header a { color: var(--navy); }
     main {
       display: grid;
-      grid-template-columns: minmax(320px, 1.1fr) minmax(320px, 0.9fr);
+      grid-template-columns: minmax(340px, 1.15fr) minmax(300px, 0.85fr);
       gap: 20px;
-      padding: 20px 32px 40px;
+      padding: 12px 32px 40px;
+      align-items: start;
     }
-    .span { grid-column: 1 / -1; }
+    #job-panel { grid-column: 1; grid-row: 1 / span 2; }
+    #preview-panel { grid-column: 2; grid-row: 1; }
+    #progress-panel { grid-column: 2; grid-row: 2; }
     .preview-image {
       width: 100%;
-      height: auto;
+      max-height: 320px;
+      object-fit: contain;
+      object-position: center;
       display: block;
       background: white;
       border: 1px solid var(--line);
@@ -116,6 +121,10 @@
     @media (max-width: 980px) {
       header, main { padding-left: 16px; padding-right: 16px; }
       main, .grid, .recipient { grid-template-columns: 1fr; }
+      #job-panel, #preview-panel, #progress-panel {
+        grid-column: 1;
+        grid-row: auto;
+      }
     }
   </style>
 </head>
@@ -128,12 +137,7 @@
     <a href="/docs">API docs</a>
   </header>
   <main>
-    <section class="span">
-      <h2>Certificate template</h2>
-      <p id="preview-caption" class="empty">This is the certificate every recipient receives. The name, event, date, and detail change. The design stays the same. Generate a batch, then click a name to see that person's copy.</p>
-      <img id="certificate-preview" class="preview-image" alt="Certificate template" src="/sample-certificate.png">
-    </section>
-    <section>
+    <section id="job-panel">
       <h2>Certificate job</h2>
       <form id="job-form">
         <div class="grid">
@@ -170,7 +174,12 @@
         </div>
       </form>
     </section>
-    <section>
+    <section id="preview-panel">
+      <h2>Certificate template</h2>
+      <p id="preview-caption" class="empty">This is the certificate every recipient receives. The name, event, date, and detail change. The design stays the same. Generate a batch, then click a name to see that person's copy.</p>
+      <img id="certificate-preview" class="preview-image" alt="Certificate template" src="/sample-certificate.png">
+    </section>
+    <section id="progress-panel">
       <h2>Progress</h2>
       <p id="summary" class="empty">Submit a batch to watch it generate here.</p>
       <div class="bar" hidden><span id="progress"></span></div>
